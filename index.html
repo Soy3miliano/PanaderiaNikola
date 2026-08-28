@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panaderia Nikola — El auténtico y mejor pan de elote</title>
+<meta name="description" content="El auténtico y mejor pan de elote de Tlajomulco. Ingredientes 100% naturales y locales. Encuéntranos recién horneado.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+<style>
+  :root{
+    --fucsia:#E4007C;
+    --fucsia-deep:#8F0057;
+    --fucsia-ink:#3D0027;
+    --rosa-claro:#FFD6EA;
+    --rosa-pale:#FFF3F8;
+    --blanco:#FFFFFF;
+    --maiz:#F5B301;
+    --tinta:#2B0E1F;
+    --sombra: 0 18px 40px -18px rgba(143,0,87,0.45);
+    --radio: 26px;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--rosa-pale);
+    color:var(--tinta);
+    font-family:'Work Sans', sans-serif;
+    font-size:17px;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  h1,h2,h3{
+    font-family:'Baloo 2', sans-serif;
+    margin:0;
+    color:var(--fucsia-ink);
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--fucsia);
+    font-weight:600;
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:22px;
+    height:2px;
+    background:var(--fucsia);
+    display:inline-block;
+  }
+  a{color:inherit;}
+  img{max-width:100%;display:block;}
+  section{position:relative;}
+  .wrap{
+    max-width:1160px;
+    margin:0 auto;
+    padding:0 32px;
+  }
+
+  /* ---------- Lattice pattern (firma visual, tomada de la textura del personaje) ---------- */
+  .lattice{
+    position:absolute;
+    inset:0;
+    background-image:
+      repeating-linear-gradient(45deg, rgba(228,0,124,0.10) 0, rgba(228,0,124,0.10) 1.5px, transparent 1.5px, transparent 26px),
+      repeating-linear-gradient(-45deg, rgba(228,0,124,0.10) 0, rgba(228,0,124,0.10) 1.5px, transparent 1.5px, transparent 26px);
+    pointer-events:none;
+  }
+  .lattice.light{
+    background-image:
+      repeating-linear-gradient(45deg, rgba(255,255,255,0.14) 0, rgba(255,255,255,0.14) 1.5px, transparent 1.5px, transparent 26px),
+      repeating-linear-gradient(-45deg, rgba(255,255,255,0.14) 0, rgba(255,255,255,0.14) 1.5px, transparent 1.5px, transparent 26px);
+  }
+
+  .kernel-divider{
+    display:flex;
+    justify-content:center;
+    line-height:0;
+    margin-top:-1px;
+  }
+  .kernel-divider svg{display:block; width:100%; height:34px;}
+
+  /* ---------- Header / Nav ---------- */
+  header.site{
+    position:sticky;
+    top:0;
+    z-index:50;
+    background:rgba(255,243,248,0.88);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(228,0,124,0.14);
+  }
+  .navrow{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 32px;
+    max-width:1160px;
+    margin:0 auto;
+  }
+  .brandmark{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .brandmark img{
+    width:46px; height:46px; border-radius:50%;
+    background:var(--rosa-claro);
+    padding:3px;
+    border:2px solid var(--fucsia);
+  }
+  .brandmark span{
+    font-family:'Baloo 2', sans-serif;
+    font-weight:700;
+    font-size:19px;
+    color:var(--fucsia-deep);
+  }
+  nav.links{
+    display:flex;
+    gap:28px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13.5px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+  }
+  nav.links a{
+    text-decoration:none;
+    color:var(--fucsia-ink);
+    opacity:0.75;
+    transition:opacity .2s;
+  }
+  nav.links a:hover{opacity:1;}
+
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    font-size:14px;
+    letter-spacing:0.03em;
+    text-transform:uppercase;
+    text-decoration:none;
+    padding:14px 26px;
+    border-radius:999px;
+    transition:transform .18s ease, box-shadow .18s ease;
+    border:2px solid transparent;
+  }
+  .btn:hover{transform:translateY(-2px);}
+  .btn-primary{
+    background:var(--fucsia);
+    color:var(--blanco);
+    box-shadow:var(--sombra);
+  }
+  .btn-primary:hover{box-shadow:0 22px 44px -16px rgba(143,0,87,0.6);}
+  .btn-ghost{
+    background:transparent;
+    color:var(--fucsia-deep);
+    border-color:var(--fucsia-deep);
+  }
+  .btn-ghost:hover{background:var(--fucsia-deep); color:var(--blanco);}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    padding:88px 0 70px;
+    overflow:hidden;
+  }
+  .hero .wrap{
+    display:grid;
+    grid-template-columns:1.05fr 0.95fr;
+    gap:40px;
+    align-items:center;
+    position:relative;
+    z-index:2;
+  }
+  .hero h1{
+    font-size:clamp(38px, 5.2vw, 62px);
+    line-height:1.04;
+    margin:18px 0 22px;
+    letter-spacing:-0.01em;
+  }
+  .hero h1 em{
+    font-style:normal;
+    color:var(--fucsia);
+    position:relative;
+  }
+  .hero p.lead{
+    font-size:19px;
+    max-width:480px;
+    color:var(--fucsia-ink);
+    opacity:0.85;
+    margin-bottom:32px;
+  }
+  .hero-ctas{
+    display:flex;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .hero-figure{
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .hero-figure .disc{
+    position:absolute;
+    width:420px;
+    height:420px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, var(--rosa-claro), var(--fucsia) 78%);
+    filter:saturate(1.05);
+  }
+  .hero-figure img.mascot{
+    position:relative;
+    width:360px;
+    filter:drop-shadow(0 24px 30px rgba(61,0,39,0.35));
+    animation:float 5.5s ease-in-out infinite;
+  }
+  @keyframes float{
+    0%,100%{transform:translateY(0) rotate(-1.2deg);}
+    50%{transform:translateY(-14px) rotate(1.2deg);}
+  }
+  .steam{
+    position:absolute;
+    top:-6px; right:26%;
+    width:70px; height:110px;
+    pointer-events:none;
+  }
+  .steam span{
+    position:absolute;
+    bottom:0;
+    width:9px;
+    height:9px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.85);
+    filter:blur(1px);
+    animation:rise 3.2s ease-in infinite;
+  }
+  .steam span:nth-child(1){left:6px; animation-delay:0s;}
+  .steam span:nth-child(2){left:26px; animation-delay:1s;}
+  .steam span:nth-child(3){left:44px; animation-delay:2s;}
+  @keyframes rise{
+    0%{ transform:translateY(0) scale(0.6); opacity:0;}
+    15%{opacity:0.9;}
+    100%{ transform:translateY(-95px) scale(1.6); opacity:0;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .hero-figure img.mascot{animation:none;}
+    .steam span{animation:none; opacity:0;}
+  }
+
+  .stat-row{
+    display:flex;
+    gap:34px;
+    margin-top:44px;
+    flex-wrap:wrap;
+  }
+  .stat-row div{
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .stat-row strong{
+    display:block;
+    font-family:'Baloo 2', sans-serif;
+    font-size:26px;
+    color:var(--fucsia-deep);
+  }
+  .stat-row small{
+    font-size:12.5px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    opacity:0.7;
+  }
+
+  /* ---------- SECRETO ---------- */
+  .secreto{
+    background:var(--blanco);
+    padding:100px 0 110px;
+  }
+  .secreto .wrap{
+    display:grid;
+    grid-template-columns:0.85fr 1.15fr;
+    gap:64px;
+    align-items:center;
+  }
+  .stamp-card{
+    background:var(--rosa-pale);
+    border:2px dashed var(--fucsia);
+    border-radius:22px;
+    padding:30px 30px 24px;
+    position:relative;
+  }
+  .stamp-card h3{
+    font-family:'IBM Plex Mono', monospace;
+    text-transform:uppercase;
+    font-size:13px;
+    letter-spacing:0.12em;
+    color:var(--fucsia-deep);
+    margin-bottom:18px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .stamp-card ul{
+    list-style:none;
+    margin:0; padding:0;
+  }
+  .stamp-card li{
+    display:flex;
+    justify-content:space-between;
+    padding:12px 0;
+    border-bottom:1px solid rgba(228,0,124,0.18);
+    font-size:15.5px;
+  }
+  .stamp-card li:last-child{border-bottom:none;}
+  .stamp-card li b{font-family:'Baloo 2'; color:var(--fucsia-ink); font-weight:600;}
+  .stamp-card li span{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    color:var(--fucsia);
+    text-transform:uppercase;
+    align-self:center;
+  }
+  .seal{
+    position:absolute;
+    top:-22px; right:-18px;
+    width:78px; height:78px;
+    border-radius:50%;
+    background:var(--fucsia);
+    color:var(--blanco);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:9px;
+    font-weight:600;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    line-height:1.25;
+    box-shadow:var(--sombra);
+    animation:spin 16s linear infinite;
+    padding:6px;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg);} }
+  @media (prefers-reduced-motion: reduce){ .seal{animation:none;} }
+
+  .secreto-copy h2{
+    font-size:clamp(30px,3.6vw,42px);
+    margin-bottom:20px;
+    line-height:1.08;
+  }
+  .secreto-copy p{
+    font-size:17.5px;
+    color:var(--fucsia-ink);
+    opacity:0.88;
+    margin-bottom:16px;
+    max-width:520px;
+  }
+  .pill-row{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:22px;
+  }
+  .pill{
+    background:var(--rosa-claro);
+    color:var(--fucsia-deep);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    font-weight:600;
+    padding:9px 16px;
+    border-radius:999px;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+  }
+
+  /* ---------- MOMENTO PERFECTO ---------- */
+  .momento{
+    background:linear-gradient(165deg, var(--fucsia) 0%, var(--fucsia-deep) 100%);
+    color:var(--blanco);
+    padding:110px 0 120px;
+    text-align:center;
+  }
+  .momento .eyebrow{color:var(--rosa-claro);}
+  .momento .eyebrow::before{background:var(--rosa-claro);}
+  .momento h2{
+    color:var(--blanco);
+    font-size:clamp(30px,4vw,46px);
+    max-width:760px;
+    margin:16px auto 14px;
+    line-height:1.1;
+  }
+  .momento > .wrap > p{
+    max-width:560px;
+    margin:0 auto 54px;
+    color:rgba(255,255,255,0.85);
+    font-size:17.5px;
+  }
+  .tickets{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(230px,1fr));
+    gap:24px;
+    max-width:820px;
+    margin:0 auto;
+  }
+  .ticket{
+    background:rgba(255,255,255,0.08);
+    border:1.5px solid rgba(255,255,255,0.35);
+    border-radius:22px;
+    padding:30px 24px 26px;
+    position:relative;
+    backdrop-filter:blur(2px);
+  }
+  .ticket::before, .ticket::after{
+    content:"";
+    position:absolute;
+    width:22px; height:22px;
+    background:var(--fucsia-deep);
+    border-radius:50%;
+    top:50%;
+    transform:translateY(-50%);
+  }
+  .ticket::before{ left:-11px; }
+  .ticket::after{ right:-11px; }
+  .ticket .hora{
+    font-family:'Baloo 2', sans-serif;
+    font-size:42px;
+    font-weight:700;
+    letter-spacing:-0.01em;
+  }
+  .ticket .tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    opacity:0.75;
+    margin-top:8px;
+  }
+  .momento-note{
+    margin-top:46px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13.5px;
+    letter-spacing:0.03em;
+    opacity:0.8;
+  }
+
+  /* ---------- MAPA ---------- */
+  .mapa-section{
+    background:var(--rosa-pale);
+    padding:110px 0 120px;
+  }
+  .mapa-head{
+    max-width:640px;
+    margin-bottom:44px;
+  }
+  .mapa-head h2{
+    font-size:clamp(30px,3.6vw,42px);
+    margin:16px 0 14px;
+    line-height:1.1;
+  }
+  .mapa-head p{
+    font-size:17.5px;
+    color:var(--fucsia-ink);
+    opacity:0.85;
+  }
+  .mapa-frame{
+    display:grid;
+    grid-template-columns:1fr;
+    background:var(--blanco);
+    border-radius:var(--radio);
+    padding:14px;
+    box-shadow:var(--sombra);
+    position:relative;
+  }
+  #map{
+    width:100%;
+    height:460px;
+    border-radius:18px;
+    filter:saturate(0.9);
+  }
+  .direccion-card{
+    position:absolute;
+    left:38px; bottom:38px;
+    background:var(--blanco);
+    border-radius:18px;
+    padding:20px 24px;
+    box-shadow:0 20px 40px -16px rgba(61,0,39,0.35);
+    max-width:290px;
+    z-index:400;
+  }
+  .direccion-card .eyebrow{margin-bottom:8px;}
+  .direccion-card h4{
+    font-family:'Baloo 2', sans-serif;
+    font-size:19px;
+    color:var(--fucsia-ink);
+    margin:0 0 6px;
+  }
+  .direccion-card p{
+    font-size:14.5px;
+    margin:0 0 14px;
+    color:var(--fucsia-ink);
+    opacity:0.8;
+  }
+  .direccion-card a.btn{
+    padding:10px 18px;
+    font-size:12.5px;
+  }
+  @media (max-width:640px){
+    .direccion-card{
+      position:static;
+      margin-top:16px;
+      max-width:none;
+      box-shadow:none;
+      border:1.5px solid var(--rosa-claro);
+    }
+  }
+  /* ---------- GALERÍA (marquee) ---------- */
+.galeria{
+  background:var(--rosa-pale);
+  padding:100px 0 110px;
+  overflow:hidden;
+}
+.galeria-head{
+  max-width:640px;
+  margin:0 auto 44px;
+  padding:0 32px;
+  text-align:center;
+}
+.galeria-head h2{
+  font-size:clamp(30px,3.6vw,42px);
+  margin:16px 0 14px;
+  line-height:1.1;
+}
+.galeria-head p{
+  font-size:17.5px;
+  color:var(--fucsia-ink);
+  opacity:0.85;
+}
+.marquee{
+  position:relative;
+  width:100%;
+  -webkit-mask-image:linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+  mask-image:linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+}
+.marquee-track{
+  display:flex;
+  gap:26px;
+  width:max-content;
+  animation:marquee-scroll 34s linear infinite;
+}
+.marquee:hover .marquee-track{
+  animation-play-state:paused;
+}
+.marquee-track img{
+  flex:none;
+  width:340px;
+  height:230px;
+  object-fit:cover;
+  border-radius:20px;
+  border:5px solid var(--blanco);
+  box-shadow:var(--sombra);
+  transition:transform .25s ease;
+}
+.marquee-track img:nth-child(odd){ transform:rotate(-1.6deg); }
+.marquee-track img:nth-child(even){ transform:rotate(1.6deg); }
+.marquee-track img:hover{ transform:scale(1.04) rotate(0deg); }
+@keyframes marquee-scroll{
+  from{ transform:translateX(0); }
+  to{ transform:translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce){
+  .marquee-track{ animation:none; }
+}
+  /* ---------- FOOTER ---------- */
+  footer{
+    background:var(--fucsia-ink);
+    color:var(--rosa-claro);
+    padding:56px 0 34px;
+  }
+  footer .wrap{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    flex-wrap:wrap;
+    gap:30px;
+  }
+  footer .brandmark span{color:var(--blanco);}
+  footer .brandmark img{border-color:var(--rosa-claro);}
+  footer .fcols{
+    display:flex;
+    gap:56px;
+    flex-wrap:wrap;
+  }
+  footer h5{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    color:var(--rosa-claro);
+    opacity:0.65;
+    margin:0 0 12px;
+  }
+  footer ul{list-style:none; margin:0; padding:0;}
+  footer li{margin-bottom:8px; font-size:14.5px;}
+  footer a{text-decoration:none; opacity:0.9;}
+  footer a:hover{opacity:1; text-decoration:underline;}
+  .fbottom{
+    max-width:1160px;
+    margin:44px auto 0;
+    padding:20px 32px 0;
+    border-top:1px solid rgba(255,214,234,0.18);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    opacity:0.55;
+  }
+
+  /* ---------- RESPONSIVE ---------- */
+  @media (max-width: 900px){
+    .hero .wrap{grid-template-columns:1fr; text-align:left;}
+    .hero-figure{order:-1; margin-bottom:10px;}
+    .hero-figure .disc{width:300px; height:300px;}
+    .hero-figure img.mascot{width:250px;}
+    .secreto .wrap{grid-template-columns:1fr;}
+    nav.links{display:none;}
+  }
+  @media (max-width:520px){
+    .wrap{padding:0 20px;}
+    .navrow{padding:12px 20px;}
+    .hero{padding:56px 0 46px;}
+    .stat-row{gap:22px;}
+  }
+
+  /* Focus visibility */
+  a:focus-visible, button:focus-visible{
+    outline:3px solid var(--fucsia-deep);
+    outline-offset:3px;
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="navrow">
+    <div class="brandmark">
+      <img src="logonikola.png" alt="Logo de la panadería, personaje de elote con gorro de chef">
+      <span>Panaderia Nikola</span>
+    </div>
+    <nav class="links">
+      <a href="#secreto">El secreto</a>
+      <a href="#momento">Horario</a>
+      <a href="#mapa">Cómo llegar</a>
+    </nav>
+    <a href="#mapa" class="btn btn-primary" style="padding:10px 20px; font-size:12.5px;">Ver mapa</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="lattice"></div>
+  <div class="wrap">
+    <div class="hero-copy">
+      <span class="eyebrow">Panadería · Tlajomulco de Zúñiga</span>
+      <h1>El <em>auténtico</em> y mejor Panaderia Nikola de Tlajomulco</h1>
+      <p class="lead">"El sabor de casa en cada bocado: ¡Ven y prueba nuestro pan de elote en Panadería Nikola!.</p>
+      <div class="hero-ctas">
+        <a href="#mapa" class="btn btn-primary">Cómo llegar</a>
+        <a href="#momento" class="btn btn-ghost">Ver hora de horneado</a>
+      </div>
+      <div class="stat-row">
+        <div><strong>100%</strong><small>Ingredientes naturales</small></div>
+        <div><strong>0</strong><small>Conservadores añadidos</small></div>
+        <div><strong>2 o MÁS</strong><small>Horneadas frescas al día</small></div>
+      </div>
+    </div>
+    <div class="hero-figure">
+      <div class="disc"></div>
+      <div class="steam"><span></span><span></span><span></span></div>
+      <img class="mascot" src="logonikola.png" alt="Personaje de pan de elote con gorro de chef, mascota de la panadería">
+    </div>
+  </div>
+</section>
+
+<div class="kernel-divider" aria-hidden="true">
+  <svg viewBox="0 0 1200 34" preserveAspectRatio="none">
+    <path d="M0,34 L0,10 Q30,34 60,10 Q90,34 120,10 Q150,34 180,10 Q210,34 240,10 Q270,34 300,10 Q330,34 360,10 Q390,34 420,10 Q450,34 480,10 Q510,34 540,10 Q570,34 600,10 Q630,34 660,10 Q690,34 720,10 Q750,34 780,10 Q810,34 840,10 Q870,34 900,10 Q930,34 960,10 Q990,34 1020,10 Q1050,34 1080,10 Q1110,34 1140,10 Q1170,34 1200,10 L1200,34 Z" fill="#FFFFFF"/>
+  </svg>
+</div>
+
+<section class="secreto" id="secreto">
+  <div class="wrap">
+    <div class="stamp-card">
+      <div class="seal">100%<br>NATURAL</div>
+      <h3>Etiqueta de autenticidad</h3>
+      <ul>
+        <li><b>Elote</b><span>Local · del día</span></li>
+        <li><b>Mantequilla</b><span>Real</span></li>
+        <li><b>Huevo</b><span>De la mejor calidad</span></li>
+        <li><b>Conservadores</b><span>Ninguno</span></li>
+        <li><b>Atajos</b><span>Cero</span></li>
+      </ul>
+    </div>
+    <div class="secreto-copy">
+      <span class="eyebrow">El secreto</span>
+      <h2 style="margin-top:14px;">Nuestra historia empieza en la milpa, no en la bolsa de un proveedor</h2>
+      <p>Escogemos elote fresco y local, no harina de maíz procesada ni saborizantes. Lo molemos nosotros, lo mezclamos a mano y lo horneamos por tanda, para que cada pieza salga con la textura deliciosa y el dulzor natural que un pan de elote debería tener.</p>
+      <p>Trabajamos con productores de la región de Tlajomulco y Guadalajara. Si el elote no está en su punto, ese día simplemente no se hornea de más — preferimos vender menos antes que bajar la calidad.</p>
+      <div class="pill-row">
+        <span class="pill">Ingredientes locales</span>
+        <span class="pill">Sin conservadores</span>
+        <span class="pill">Receta artesanal</span>
+        <span class="pill">Sin Harina</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="kernel-divider" aria-hidden="true">
+  <svg viewBox="0 0 1200 34" preserveAspectRatio="none">
+    <path d="M0,34 L0,10 Q30,34 60,10 Q90,34 120,10 Q150,34 180,10 Q210,34 240,10 Q270,34 300,10 Q330,34 360,10 Q390,34 420,10 Q450,34 480,10 Q510,34 540,10 Q570,34 600,10 Q630,34 660,10 Q690,34 720,10 Q750,34 780,10 Q810,34 840,10 Q870,34 900,10 Q930,34 960,10 Q990,34 1020,10 Q1050,34 1080,10 Q1110,34 1140,10 Q1170,34 1200,10 L1200,34 Z" fill="#FFD6EA"/>
+  </svg>
+</div>
+
+<section class="galeria" id="galeria">
+  <div class="galeria-head">
+    <span class="eyebrow">Directo del horno</span>
+    <h2>Así se ve nuestro pan de elote</h2>
+    <p>Un vistazo rápido a lo que sale del horno cada día.</p>
+  </div>
+  <div class="marquee">
+    <div class="marquee-track">
+      <img src="Img1.jpg" alt="Pan de elote recién horneado">
+      <img src="Img2.jpg" alt="Pan de elote recién horneado">
+      <img src="Img3.jpg" alt="Pan de elote recién horneado">
+      <img src="Img4.jpg" alt="Pan de elote recién horneado">
+      <img src="Img5.jpg" alt="Pan de elote recién horneado">
+      <img src="Img6.jpg" alt="Pan de elote recién horneado">
+      <img src="Img7.jpg" alt="Pan de elote recién horneado">
+      <img src="Img8.jpg" alt="Pan de elote recién horneado">
+      <!-- Duplicado exacto de arriba, para que el loop se vea continuo -->
+      <img src="Img1.jpg" alt="" aria-hidden="true">
+      <img src="Img2.jpg" alt="" aria-hidden="true">
+      <img src="Img3.jpg" alt="" aria-hidden="true">
+      <img src="Img4.jpg" alt="" aria-hidden="true">
+      <img src="Img5.jpg" alt="" aria-hidden="true">
+      <img src="Img6.jpg" alt="" aria-hidden="true">
+      <img src="Img7.jpg" alt="" aria-hidden="true">
+      <img src="Img8.jpg" alt="" aria-hidden="true">
+    </div>
+  </div>
+</section>
+
+<section class="momento" id="momento">
+  <div class="lattice light"></div>
+  <div class="wrap">
+    <span class="eyebrow">El momento perfecto</span>
+    <h2>No es un horario de apertura. Es la hora exacta en la que el pan sale del horno.</h2>
+    <p>Ese es el momento en que el olor a elote caliente sale hasta la banqueta. Llega cerca de estas horas y te lo llevas recién horneado.</p>
+    <div class="tickets">
+      <div class="ticket">
+        <div class="hora">11:00&nbsp;AM</div>
+        <div class="tag">Primera horneada</div>
+      </div>
+      <div class="ticket">
+        <div class="hora">6:00&nbsp;PM</div>
+        <div class="tag">Segunda horneada</div>
+      </div>
+    </div>
+    <p class="momento-note">NOTA: Estos son horarios que pueden cambiar, pero si quieres asegurar tu pan calientito, manda mensaje a nuestro número.</p>
+  </div>
+</section>
+
+<div class="kernel-divider" aria-hidden="true" style="transform:rotate(180deg);">
+  <svg viewBox="0 0 1200 34" preserveAspectRatio="none">
+    <path d="M0,34 L0,10 Q30,34 60,10 Q90,34 120,10 Q150,34 180,10 Q210,34 240,10 Q270,34 300,10 Q330,34 360,10 Q390,34 420,10 Q450,34 480,10 Q510,34 540,10 Q570,34 600,10 Q630,34 660,10 Q690,34 720,10 Q750,34 780,10 Q810,34 840,10 Q870,34 900,10 Q930,34 960,10 Q990,34 1020,10 Q1050,34 1080,10 Q1110,34 1140,10 Q1170,34 1200,10 L1200,34 Z" fill="#FFF3F8"/>
+  </svg>
+</div>
+
+<section class="mapa-section" id="mapa">
+  <div class="wrap">
+    <div class="mapa-head">
+      <span class="eyebrow">Cómo llegar</span>
+      <h2>Encuéntranos en Tlajomulco</h2>
+      <p>Un mapa sencillo con nuestra ubicación exacta. Toca el marcador para ver la dirección completa y trazar tu ruta.</p>
+    </div>
+    <div class="mapa-frame">
+      <div id="map"></div>
+      <div class="direccion-card">
+        <span class="eyebrow" style="font-size:11px;">Ubicación</span>
+        <h4>Panaderia Nikola Tlajomulco</h4>
+        <p>Av. Nuevo México 103<br>Tlajomulco de Zúñiga, Jal.</p>
+        <a class="btn btn-primary" id="directions-link" href="#" target="_blank" rel="noopener">Trazar ruta</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="brandmark">
+      <img src="logonikola.png" alt="Logo de Pan de Elote Tlajomulco">
+      <span>Pan de Elote Tlajomulco</span>
+    </div>
+    <div class="fcols">
+      <div>
+        <h5>Visítanos</h5>
+        <ul>
+          <li>Av. Nuevo México 103</li>
+          <li>Tlajomulco de Zúñiga, Jal.</li>
+        </ul>
+      </div>
+      <div>
+        <h5>Horneadas</h5>
+        <ul>
+          <li>11:00 AM</li>
+          <li>1:00 PM</li>
+          <li>3:00 PM</li>
+          <li>6:00 PM</li>
+          <li>7:00 PM</li>
+        </ul>
+      </div>
+      <div>
+        <h5>Síguenos</h5>
+        <ul>
+          <li><a href="https://www.instagram.com/nikolamx/" target="_blank" rel="noopener">Instagram</a></li>
+          <li><a href="https://wa.me/523317394919?text=Hola%2C%20buenas%20tardes!%20Quisiera%20preguntar%20sobre%20el%20pan%20de%20elote" target="_blank" rel="noopener">WhatsApp</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="fbottom">© 2026 PanaderiaNikola Tlajomulco. Hecho con elote, mantequilla y paciencia.</div>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+  // ======= CONFIGURA AQUÍ TU UBICACIÓN =======
+  // Reemplaza estas coordenadas por las de tu panadería.
+  // Puedes obtenerlas dando clic derecho en Google Maps > "¿Qué hay aquí?"
+  const PANADERIA = {
+    lat: 20.51804873786806,
+    lng: -103.3872551768224,
+    nombre: "Panaderia Nikola",
+    direccion: "Blvrd Nuevo Mexico 103, Hacienda Santa Fe, 45653 Hacienda Santa Fe, Jal."
+  };
+  // ============================================
+
+  const map = L.map('map', {
+    scrollWheelZoom: false,
+    zoomControl: true
+  }).setView([PANADERIA.lat, PANADERIA.lng], 16);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+  // Ícono personalizado (elote) con los colores de la marca
+  const eloteIcon = L.divIcon({
+    className: 'elote-marker',
+    html: `
+      <div style="
+        width:44px;height:44px;border-radius:50% 50% 50% 0;
+        background:#E4007C;
+        transform:rotate(-45deg);
+        display:flex;align-items:center;justify-content:center;
+        box-shadow:0 8px 18px -6px rgba(143,0,87,0.6);
+        border:3px solid #FFFFFF;">
+        <span style="transform:rotate(45deg); font-size:20px;">🌽</span>
+      </div>`,
+    iconSize: [44, 44],
+    iconAnchor: [22, 42],
+    popupAnchor: [0, -38]
+  });
+
+  const marker = L.marker([PANADERIA.lat, PANADERIA.lng], { icon: eloteIcon }).addTo(map);
+  marker.bindPopup(`<strong>${PANADERIA.nombre}</strong><br>${PANADERIA.direccion}`);
+
+  document.getElementById('directions-link').href =
+    `https://www.google.com/maps/dir/?api=1&destination=${PANADERIA.lat},${PANADERIA.lng}`;
+</script>
+
+</body>
+</html>
